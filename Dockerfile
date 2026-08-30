@@ -47,6 +47,9 @@ RUN npm ci
 COPY . .
 COPY --from=php-builder /app/vendor ./vendor
 
+# Prepare temporary .env and APP_KEY so Wayfinder plugin can boot Laravel during asset compilation
+RUN cp .env.example .env && php artisan key:generate
+
 # Build frontend assets (Vite + Inertia React + Wayfinder)
 RUN npm run build
 
