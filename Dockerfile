@@ -18,10 +18,7 @@ RUN npm run build
 # ==========================================
 # Stage 2: PHP Composer Dependencies Build
 # ==========================================
-FROM php:8.3-cli-alpine AS php-builder
-
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+FROM composer:2 AS php-builder
 
 WORKDIR /app
 
@@ -29,11 +26,11 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 
 # Install PHP production dependencies
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction --ignore-platform-reqs
 
 # Copy application source and generate optimized autoloader
 COPY . .
-RUN composer dump-autoload --optimize --no-dev
+RUN composer dump-autoload --optimize --no-dev --ignore-platform-reqs
 
 # ==========================================
 # Stage 3: Production Runtime Application
