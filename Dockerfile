@@ -3,6 +3,10 @@
 # ==========================================
 FROM node:22-alpine AS frontend-builder
 
+# Install PHP for Wayfinder plugin during vite build
+RUN apk add --no-cache php83 php83-cli php83-tokenizer php83-mbstring && \
+    ln -sf /usr/bin/php83 /usr/bin/php 2>/dev/null || true
+
 WORKDIR /app
 
 # Install npm dependencies
