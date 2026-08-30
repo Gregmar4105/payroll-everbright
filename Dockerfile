@@ -1,26 +1,5 @@
 # ==========================================
-# Stage 1: Node.js Frontend Asset Build
-# ==========================================
-FROM node:22-alpine AS frontend-builder
-
-# Install PHP for Wayfinder plugin during vite build
-RUN apk add --no-cache php83 php83-cli php83-tokenizer php83-mbstring && \
-    ln -sf /usr/bin/php83 /usr/bin/php 2>/dev/null || true
-
-WORKDIR /app
-
-# Install npm dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# Copy project source code for Vite build
-COPY . .
-
-# Build frontend assets (Vite + Inertia React)
-RUN npm run build
-
-# ==========================================
-# Stage 2: PHP Composer Dependencies Build
+# Stage 1: PHP Composer Dependencies Build
 # ==========================================
 FROM composer:2 AS php-builder
 
@@ -35,6 +14,41 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-in
 # Copy application source and generate optimized autoloader
 COPY . .
 RUN composer dump-autoload --optimize --no-dev --ignore-platform-reqs
+
+# ==========================================
+# Stage 2: Node.js Frontend Asset Build
+# ==========================================
+FROM node:22-alpine AS frontend-builder
+
+# Install PHP for Wayfinder plugin during vite build
+RUN apk add --no-cache \
+    php83 \
+    php83-cli \
+    php83-tokenizer \
+    php83-mbstring \
+    php83-ctype \
+    php83-dom \
+    php83-xml \
+    php83-session \
+    php83-fileinfo \
+    php83-openssl \
+    php83-phar \
+    php83-pdo \
+    php83-pdo_mysql && \
+    ln -sf /usr/bin/php83 /usr/bin/php
+
+WORKDIR /app
+
+# Install npm dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy project source code and vendor from php-builder
+COPY . .
+COPY --from=php-builder /app/vendor ./vendor
+
+# Build frontend assets (Vite + Inertia React + Wayfinder)
+RUN npm run build
 
 # ==========================================
 # Stage 3: Production Runtime Application
